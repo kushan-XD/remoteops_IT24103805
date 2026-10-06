@@ -5,6 +5,7 @@
 #include <string.h>
 #include "stream_io.h"
 #include "system_info.h"
+#include "process_info.h"
 
 #define AUTH_TOKEN "OPS-3805"
 #define SID_TAG " SID:5083\n"
@@ -33,6 +34,8 @@ static inline void serve_session(int fd)
             return;
         }
 
+        char process_list[4096];
+        char process_response[8192];
         char statistics[128];
         char system_response[256];
         const char *response;
@@ -47,6 +50,20 @@ static inline void serve_session(int fd)
             response = "ERR 001 AUTH_FAILED" SID_TAG;
         } else if (!authenticated) {
             response = "ERR 003 AUTH_REQUIRED" SID_TAG;
+        } else if (strcmp(command, "LISTPROC") == 0) {
+            if (format_process_list(process_list, sizeof(process_list)) == -1) {
+                response = "ERR 008 IO_ERROR" SID_TAG;
+            } else {
+                int length = snprintf(
+                    process_response, sizeof(process_response),
+                    "OK PROCS %s" SID_TAG, process_list);
+
+                if (length < 0 ||
+                    (size_t)length >= sizeof(process_response))
+                    response = "ERR 008 IO_ERROR" SID_TAG;
+                else
+                    response = process_response;
+            }
         } else if (strcmp(command, "SYSINFO") == 0) {
             if (format_system_stats(statistics, sizeof(statistics)) == -1) {
                 response = "ERR 008 IO_ERROR" SID_TAG;
