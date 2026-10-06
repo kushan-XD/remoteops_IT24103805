@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "stream_io.h"
+#include "system_info.h"
 
 #define AUTH_TOKEN "OPS-3805"
 #define SID_TAG " SID:5083\n"
@@ -32,6 +33,8 @@ static inline void serve_session(int fd)
             return;
         }
 
+        char statistics[128];
+        char system_response[256];
         const char *response;
         int quit = 0;
 
@@ -44,6 +47,20 @@ static inline void serve_session(int fd)
             response = "ERR 001 AUTH_FAILED" SID_TAG;
         } else if (!authenticated) {
             response = "ERR 003 AUTH_REQUIRED" SID_TAG;
+        } else if (strcmp(command, "SYSINFO") == 0) {
+            if (format_system_stats(statistics, sizeof(statistics)) == -1) {
+                response = "ERR 008 IO_ERROR" SID_TAG;
+            } else {
+                int length = snprintf(
+                    system_response, sizeof(system_response),
+                    "OK SYSINFO %s" SID_TAG, statistics);
+
+                if (length < 0 ||
+                    (size_t)length >= sizeof(system_response))
+                    response = "ERR 008 IO_ERROR" SID_TAG;
+                else
+                    response = system_response;
+            }
         } else if (strcmp(command, "QUIT") == 0) {
             response = "OK BYE" SID_TAG;
             quit = 1;
