@@ -6,6 +6,7 @@
 #include "stream_io.h"
 #include "system_info.h"
 #include "process_info.h"
+#include "exec_info.h"
 
 #define AUTH_TOKEN "OPS-3805"
 #define SID_TAG " SID:5083\n"
@@ -34,6 +35,8 @@ static inline void serve_session(int fd)
             return;
         }
 
+        char exec_output[4096];
+        char exec_response[8192];
         char process_list[4096];
         char process_response[8192];
         char statistics[128];
@@ -50,6 +53,28 @@ static inline void serve_session(int fd)
             response = "ERR 001 AUTH_FAILED" SID_TAG;
         } else if (!authenticated) {
             response = "ERR 003 AUTH_REQUIRED" SID_TAG;
+        } else if (strcmp(command, "EXEC") == 0 ||
+                   strncmp(command, "EXEC ", 5) == 0) {
+            const char *name =
+                command[4] == ' ' ? command + 5 : "";
+            int execution = format_exec_result(
+                name, exec_output, sizeof(exec_output));
+
+            if (execution == 1) {
+                response = "ERR 002 COMMAND_NOT_ALLOWED" SID_TAG;
+            } else if (execution == -1) {
+                response = "ERR 008 IO_ERROR" SID_TAG;
+            } else {
+                int length = snprintf(
+                    exec_response, sizeof(exec_response),
+                    "OK EXEC_RESULT %s" SID_TAG, exec_output);
+
+                if (length < 0 ||
+                    (size_t)length >= sizeof(exec_response))
+                    response = "ERR 008 IO_ERROR" SID_TAG;
+                else
+                    response = exec_response;
+            }
         } else if (strcmp(command, "LISTPROC") == 0) {
             if (format_process_list(process_list, sizeof(process_list)) == -1) {
                 response = "ERR 008 IO_ERROR" SID_TAG;

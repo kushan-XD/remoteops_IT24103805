@@ -4,7 +4,7 @@ CFLAGS = -std=c11 -Wall -Wextra -Wpedantic -g -pthread -D_POSIX_C_SOURCE=200809L
 .PHONY: all clean
 all: agent_805 controller_805
 
-agent_805: agent_805.c stream_io.h auth_session.h system_info.h process_info.h
+agent_805: agent_805.c stream_io.h auth_session.h system_info.h process_info.h exec_info.h
 	$(CC) $(CFLAGS) agent_805.c -o agent_805
 
 controller_805: controller_805.c stream_io.h
