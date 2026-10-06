@@ -1,0 +1,14 @@
+CC = gcc
+CFLAGS = -std=c11 -Wall -Wextra -Wpedantic -g
+
+.PHONY: all clean
+all: agent_805 controller_805
+
+agent_805: agent_805.c
+	$(CC) $(CFLAGS) agent_805.c -o agent_805
+
+controller_805: controller_805.c
+	$(CC) $(CFLAGS) controller_805.c -o controller_805
+
+clean:
+	rm -f agent_805 controller_805

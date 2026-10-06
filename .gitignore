@@ -1,3 +1,6 @@
 /practice/socket_probe
 /practice/environment_probe
 *.o
+
+/agent_805
+/controller_805
