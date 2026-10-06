@@ -4,6 +4,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "auth_session.h"
+
 #define AGENT_PORT 9410
 
 int main(void)
@@ -52,7 +54,8 @@ int main(void)
             return 1;
         }
 
-        puts("Client connected; closing this test connection.");
+        puts("Client connected; starting command session.");
+        serve_session(client_fd);
         if (close(client_fd) == -1)
             perror("close client");
     }

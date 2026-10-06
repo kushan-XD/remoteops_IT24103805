@@ -17,3 +17,20 @@ AI assistance:
 Codex supplied the initial Agent, Controller and Makefile increments.
 I compiled and ran them in CentOS and shared screenshots for review.
 My own explanation of the socket lifecycle is still to be recorded.
+
+## Authentication increment
+
+Observed tests:
+- Commands before AUTH were rejected.
+- Wrong token failed; OPS-3805 authenticated successfully.
+- QUIT returned the tagged response and closed the connection.
+- Fragmented AUTH waited for completion.
+- A new connection started unauthenticated.
+
+The fragmented/new-connection checks are repeatable using:
+python3 tests/auth_checkpoint.py
+
+Limitations: Agent still serves one connection at a time.
+The C Controller is still the earlier connection-only version.
+AI assistance: Codex supplied the stream helpers, authentication
+handler, integration patch and test; I ran the verification.
