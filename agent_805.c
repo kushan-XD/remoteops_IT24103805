@@ -4,9 +4,24 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <pthread.h>
+#include <stdlib.h>
 #include "auth_session.h"
 
 #define AGENT_PORT 9410
+
+static void *client_worker(void *argument)
+{
+    int client_fd = *(int *)argument;
+    free(argument);
+
+    serve_session(client_fd);
+
+    if (close(client_fd) == -1)
+        perror("close client");
+
+    return NULL;
+}
 
 int main(void)
 {
@@ -44,19 +59,56 @@ int main(void)
 
     printf("Agent IT24103805 listening on TCP port %d\n", AGENT_PORT);
 
+    pthread_attr_t attributes;
+    int error = pthread_attr_init(&attributes);
+    if (error != 0) {
+        fprintf(stderr, "pthread_attr_init: %s\n", strerror(error));
+        close(listen_fd);
+        return 1;
+    }
+
+    error = pthread_attr_setdetachstate(
+        &attributes, PTHREAD_CREATE_DETACHED);
+    if (error != 0) {
+        fprintf(stderr, "pthread_attr_setdetachstate: %s\n",
+                strerror(error));
+        pthread_attr_destroy(&attributes);
+        close(listen_fd);
+        return 1;
+    }
+
     for (;;) {
         int client_fd = accept(listen_fd, NULL, NULL);
         if (client_fd == -1) {
             if (errno == EINTR)
                 continue;
             perror("accept");
+            pthread_attr_destroy(&attributes);
             close(listen_fd);
             return 1;
         }
 
-        puts("Client connected; starting command session.");
-        serve_session(client_fd);
-        if (close(client_fd) == -1)
-            perror("close client");
+        int *argument = malloc(sizeof(*argument));
+        if (argument == NULL) {
+            perror("malloc");
+            close(client_fd);
+            continue;
+        }
+
+        *argument = client_fd;
+
+        pthread_t worker;
+        error = pthread_create(
+            &worker, &attributes, client_worker, argument);
+
+        if (error != 0) {
+            fprintf(stderr, "pthread_create: %s\n", strerror(error));
+            free(argument);
+            close(client_fd);
+            continue;
+        }
+
+        puts("Client assigned to an independent worker.");
+        /* The worker now owns argument and client_fd. */
     }
 }

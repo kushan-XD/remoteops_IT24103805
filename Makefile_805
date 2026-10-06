@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c11 -Wall -Wextra -Wpedantic -g
+CFLAGS = -std=c11 -Wall -Wextra -Wpedantic -g -pthread
 
 .PHONY: all clean
 all: agent_805 controller_805
@@ -7,7 +7,7 @@ all: agent_805 controller_805
 agent_805: agent_805.c stream_io.h auth_session.h
 	$(CC) $(CFLAGS) agent_805.c -o agent_805
 
-controller_805: controller_805.c
+controller_805: controller_805.c stream_io.h
 	$(CC) $(CFLAGS) controller_805.c -o controller_805
 
 clean:
