@@ -8,7 +8,7 @@ def check_reply(reader, expected):
     print(repr(actual))
     assert actual == expected, (actual, expected)
 
-# Test 1: a command without its newline must not be processed.
+
 with socket.create_connection(ADDRESS, timeout=5) as sock:
     sock.sendall(b"AUTH OPS-")
 
@@ -24,7 +24,7 @@ with socket.create_connection(ADDRESS, timeout=5) as sock:
 
 print("PASS: fragmented AUTH and following QUIT")
 
-# Test 2: a new connection must start unauthenticated.
+
 with socket.create_connection(ADDRESS, timeout=5) as sock:
     sock.sendall(b"SYSINFO\nAUTH OPS-3805\nQUIT\n")
 
