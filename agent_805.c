@@ -15,7 +15,9 @@ static void *client_worker(void *argument)
     int client_fd = *(int *)argument;
     free(argument);
 
+    log_event(client_fd, "CONNECT", "worker started");
     serve_session(client_fd);
+    log_event(client_fd, "DISCONNECT", "session ended");
 
     if (close(client_fd) == -1)
         perror("close client");

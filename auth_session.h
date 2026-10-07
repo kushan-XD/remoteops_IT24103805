@@ -7,6 +7,7 @@
 #include "system_info.h"
 #include "process_info.h"
 #include "exec_info.h"
+#include "logging.h"
 
 #define AUTH_TOKEN "OPS-3805"
 #define SID_TAG " SID:5083\n"
@@ -20,20 +21,31 @@ static inline void serve_session(int fd)
     for (;;) {
         int result = stream_read_line(&reader, command, sizeof(command));
 
-        if (result == 0)
+        if (result == 0) {
+            log_event(fd, "EOF", "peer closed connection");
             return;
+        }
 
         if (result == -1) {
+            log_event(fd, "RECEIVE_ERROR", "socket read failed");
             perror("receive");
             return;
         }
 
         if (result == -2) {
+            log_event(fd, "BAD_REQUEST",
+                      "invalid oversized or incomplete command");
             const char *error = "ERR 006 BAD_REQUEST" SID_TAG;
             if (stream_send_all(fd, error, strlen(error)) == -1)
                 perror("send error response");
             return;
         }
+
+        if (strcmp(command, "AUTH") == 0 ||
+            strncmp(command, "AUTH ", 5) == 0)
+            log_event(fd, "COMMAND", "AUTH [token omitted]");
+        else
+            log_event(fd, "COMMAND", command);
 
         char exec_output[4096];
         char exec_response[8192];
@@ -111,6 +123,7 @@ static inline void serve_session(int fd)
         }
 
         if (stream_send_all(fd, response, strlen(response)) == -1) {
+            log_event(fd, "SEND_ERROR", "response send failed");
             perror("send response");
             return;
         }
