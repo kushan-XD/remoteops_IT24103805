@@ -80,6 +80,33 @@ static inline int stream_read_line(
     }
 }
 
+
+/*
+ * Read exactly length bytes through the connection's buffered reader.
+ * Return 1 on success, 0 on premature EOF, or -1 on receive error.
+ * On failure, the destination may contain a partial result.
+ */
+static inline int stream_read_exact(
+    struct stream_reader *reader, void *destination, size_t length)
+{
+    unsigned char *bytes = destination;
+    size_t received = 0;
+
+    while (received < length) {
+        ssize_t count = stream_read_some(
+            reader, bytes + received, length - received);
+
+        if (count == -1)
+            return -1;
+        if (count == 0)
+            return 0;
+
+        received += (size_t)count;
+    }
+
+    return 1;
+}
+
 /* Send every byte. Return 0 on success or -1 on failure. */
 static inline int stream_send_all(
     int fd, const void *data, size_t length)

@@ -8,6 +8,7 @@
 #include "process_info.h"
 #include "exec_info.h"
 #include "logging.h"
+#include "file_transfer.h"
 
 #define AUTH_TOKEN "OPS-3805"
 #define SID_TAG " SID:5083\n"
@@ -65,6 +66,20 @@ static inline void serve_session(int fd)
             response = "ERR 001 AUTH_FAILED" SID_TAG;
         } else if (!authenticated) {
             response = "ERR 003 AUTH_REQUIRED" SID_TAG;
+            /* A PUT body may already be queued: close after rejection. */
+            if (strcmp(command, "PUT") == 0 ||
+                strncmp(command, "PUT ", 4) == 0)
+                quit = 1;
+        } else if (strcmp(command, "PUT") == 0 ||
+                   strncmp(command, "PUT ", 4) == 0) {
+            if (!handle_put(fd, &reader, command))
+                return;
+            continue;
+        } else if (strcmp(command, "GET") == 0 ||
+                   strncmp(command, "GET ", 4) == 0) {
+            if (!handle_get(fd, command))
+                return;
+            continue;
         } else if (strcmp(command, "EXEC") == 0 ||
                    strncmp(command, "EXEC ", 5) == 0) {
             const char *name =

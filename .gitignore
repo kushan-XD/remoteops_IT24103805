@@ -7,3 +7,7 @@
 
 # Live Agent log
 /remoteops_IT24103805.log
+
+# Runtime file storage and temporary code export
+/agentfiles/
+/current-code.txt
