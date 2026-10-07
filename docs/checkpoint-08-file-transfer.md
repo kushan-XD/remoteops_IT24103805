@@ -35,3 +35,12 @@ Verified:
 
 Symlink rejection, concurrent transfers and timeout expiry still
 require dedicated tests.
+
+Additional verification using tests/file_safety.py:
+- GET and PUT rejected a symbolic-link destination.
+- The symbolic link's target remained unchanged.
+- Five concurrent uploads to the same filename completed.
+- The final file matched one complete uploaded payload.
+- No additional upload temporary files remained.
+
+Transfer timeout expiry still requires a dedicated test.
