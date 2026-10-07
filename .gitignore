@@ -11,3 +11,8 @@
 # Runtime file storage and temporary code export
 /agentfiles/
 /current-code.txt
+
+# Local transfer test files
+/controller-check.bin
+/downloaded-*
+/.download-*

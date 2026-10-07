@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "stream_io.h"
+#include "controller_files.h"
 
 #define AGENT_PORT 9410
 
@@ -53,6 +54,17 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Input must fit on one complete line.\n");
             close(fd);
             return 1;
+        }
+
+        if (strncmp(command, "PUT ", 4) == 0 ||
+            strncmp(command, "GET ", 4) == 0) {
+            command[length - 1] = '\0';
+            if (!controller_file_command(fd, &reader, command)) {
+                fprintf(stderr, "File transfer ended the connection.\n");
+                close(fd);
+                return 1;
+            }
+            continue;
         }
 
         if (stream_send_all(fd, command, length) == -1) {
