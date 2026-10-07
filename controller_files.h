@@ -2,12 +2,36 @@
 #define CONTROLLER_FILES_H
 
 #include <fcntl.h>
+#include <time.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include "file_rules.h"
 #include "stream_io.h"
+
+
+/* Local end-to-end transfer measurement; not a network-only benchmark. */
+static inline void controller_transfer_report(
+    const char *operation, uint64_t bytes,
+    const struct timespec *started, int timing_valid)
+{
+    struct timespec finished;
+    if (!timing_valid ||
+        clock_gettime(CLOCK_MONOTONIC, &finished) == -1)
+        return;
+
+    double seconds = (double)(finished.tv_sec - started->tv_sec)
+                   + (double)(finished.tv_nsec - started->tv_nsec) / 1e9;
+
+    if (seconds <= 0.0)
+        return;
+
+    double mib = (double)bytes / (1024.0 * 1024.0);
+    printf("%s: %llu bytes in %.6f s (%.2f MiB/s)\n",
+           operation, (unsigned long long)bytes,
+           seconds, mib / seconds);
+}
 
 /* Return 1 to continue, or 0 when the connection must close. */
 static inline int controller_file_command(
@@ -20,6 +44,10 @@ static inline int controller_file_command(
         fprintf(stderr, "Use PUT filename or GET filename; no paths.\n");
         return 1;
     }
+
+    struct timespec started;
+    int timing_valid =
+        clock_gettime(CLOCK_MONOTONIC, &started) == 0;
 
     char header[512];
     char response[512];
@@ -83,7 +111,11 @@ static inline int controller_file_command(
                  "OK FILE_RECEIVED %s SID:5083", name);
 
         /* Agent closes after rejecting PUT; do not reuse that socket. */
-        return strcmp(response, header) == 0;
+        int accepted = strcmp(response, header) == 0;
+        if (accepted)
+            controller_transfer_report(
+                "Upload", (uint64_t)info.st_size, &started, timing_valid);
+        return accepted;
     }
 
     int length = snprintf(header, sizeof(header), "GET %s\n", name);
@@ -176,6 +208,8 @@ static inline int controller_file_command(
     } else {
         printf("Saved %llu bytes to %s\n",
                (unsigned long long)size, destination);
+        controller_transfer_report(
+            "Download", size, &started, timing_valid);
     }
     if (unlink(temporary) == -1)
         perror("remove download temporary file");
