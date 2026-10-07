@@ -8,12 +8,14 @@
 #include "process_info.h"
 #include "exec_info.h"
 #include "logging.h"
+#include "monitor.h"
 #include "file_transfer.h"
 
 #define AUTH_TOKEN "OPS-3805"
 #define SID_TAG " SID:5083\n"
 
-static inline void serve_session(int fd)
+static inline void serve_session_commands(
+    int fd, struct session_monitor *monitor)
 {
     struct stream_reader reader = {.fd = fd};
     int authenticated = 0;
@@ -57,6 +59,10 @@ static inline void serve_session(int fd)
         const char *response;
         int quit = 0;
 
+        if (strcmp(command, "AUTH") == 0 ||
+            strncmp(command, "AUTH ", 5) == 0)
+            monitor_stop(monitor);
+
         if (strcmp(command, "AUTH " AUTH_TOKEN) == 0) {
             authenticated = 1;
             response = "OK AUTHENTICATED" SID_TAG;
@@ -70,6 +76,9 @@ static inline void serve_session(int fd)
             if (strcmp(command, "PUT") == 0 ||
                 strncmp(command, "PUT ", 4) == 0)
                 quit = 1;
+        } else if (strcmp(command, "MONITOR") == 0 ||
+                   strncmp(command, "MONITOR ", 8) == 0) {
+            response = monitor_command(monitor, command);
         } else if (strcmp(command, "PUT") == 0 ||
                    strncmp(command, "PUT ", 4) == 0) {
             if (!handle_put(fd, &reader, command))
@@ -146,6 +155,21 @@ static inline void serve_session(int fd)
         if (quit)
             return;
     }
+}
+
+
+static inline void serve_session(int fd)
+{
+    struct session_monitor monitor;
+
+    if (monitor_init(&monitor, fd) == -1) {
+        const char *error = "ERR 008 IO_ERROR" SID_TAG;
+        stream_send_all(fd, error, strlen(error));
+        return;
+    }
+
+    serve_session_commands(fd, &monitor);
+    monitor_destroy(&monitor);
 }
 
 #endif
