@@ -164,4 +164,4 @@ There is no global worker limit or graceful Agent shutdown joining
 all client workers. Slow clients can consume resources.
 Killing the Agent can leave upload temporary files.
 
-This is a coursework demonstration, not a production service.
+
