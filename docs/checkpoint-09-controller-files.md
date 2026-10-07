@@ -16,3 +16,12 @@ Verified:
 
 Existing-destination rejection and interrupted Controller downloads
 still require dedicated tests.
+
+Additional verification with tests/controller_download_safety.py:
+- Truncated downloads were rejected and partial files removed.
+- Existing download destinations were preserved.
+- The session remained usable after a save was rejected.
+
+Run this mock-server test with the Agent stopped: both use TCP
+port 9410, and the Agent binds all local IPv4 addresses.
+Restart the Agent afterwards.

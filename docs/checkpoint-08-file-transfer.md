@@ -44,3 +44,8 @@ Additional verification using tests/file_safety.py:
 - No additional upload temporary files remained.
 
 Transfer timeout expiry still requires a dedicated test.
+
+Upload timeout verified with tests/put_timeout.py:
+- A stalled upload was rejected after approximately 15.4 seconds.
+- Its temporary file was removed.
+- Another client remained usable during the stalled upload.
