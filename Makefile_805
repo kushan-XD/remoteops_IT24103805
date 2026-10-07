@@ -7,7 +7,7 @@ all: agent_805 controller_805
 agent_805: agent_805.c stream_io.h auth_session.h system_info.h process_info.h exec_info.h logging.h file_transfer.h file_rules.h monitor.h
 	$(CC) $(CFLAGS) agent_805.c -o agent_805
 
-controller_805: controller_805.c stream_io.h controller_files.h file_rules.h
+controller_805: controller_805.c stream_io.h controller_files.h file_rules.h controller_monitor.h
 	$(CC) $(CFLAGS) controller_805.c -o controller_805
 
 clean:
